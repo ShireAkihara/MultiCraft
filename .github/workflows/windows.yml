@@ -35,7 +35,7 @@ jobs:
             mingw-w64-x86_64-libogg
             mingw-w64-x86_64-curl
             mingw-w64-x86_64-freetype
-            mingw-w64-x86_64-luajit
+            mingw-w64-x86_64-lua51
             mingw-w64-x86_64-gmp
             mingw-w64-x86_64-jsoncpp
             mingw-w64-x86_64-zstd
