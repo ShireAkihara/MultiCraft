@@ -13,7 +13,10 @@ jobs:
           submodules: recursive
 
       - name: Checkout IrrlichtMt
-        run: git clone --depth 1 https://github.com lib/irrlichtmt
+        uses: actions/checkout@v4
+        with:
+          repository: MultiCraft/irrlicht
+          path: lib/irrlichtmt
 
       - name: Install Dependencies (vcpkg)
         run: |
