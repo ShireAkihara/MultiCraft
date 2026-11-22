@@ -6,64 +6,48 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 150
     defaults:
       run:
         shell: msys2 {0}
     steps:
-      - name: Checkout MultiCraft
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Checkout IrrlichtMt
-        uses: actions/checkout@v4
-        with:
-          repository: minetest/irrlicht
-          path: lib/irrlichtmt
-
-      - name: Setup MSYS2 & Dependencies
+      - name: Install MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: UCRT64
+          msystem: MINGW64
           update: true
+          suppress-deprecation-warnings: msystem-mingw64
           install: >-
-            mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-ninja
-            mingw-w64-ucrt-x86_64-openal
-            mingw-w64-ucrt-x86_64-libvorbis
-            mingw-w64-ucrt-x86_64-libogg
-            mingw-w64-ucrt-x86_64-curl
-            mingw-w64-ucrt-x86_64-freetype
-            mingw-w64-ucrt-x86_64-luajit
-            mingw-w64-ucrt-x86_64-gmp
-            mingw-w64-ucrt-x86_64-jsoncpp
-            mingw-w64-ucrt-x86_64-zstd
-            mingw-w64-ucrt-x86_64-sqlite3
-            mingw-w64-ucrt-x86_64-zlib
-            mingw-w64-ucrt-x86_64-bzip2
-            mingw-w64-ucrt-x86_64-libjpeg-turbo
-            mingw-w64-ucrt-x86_64-libpng
+            mingw-w64-x86_64-clang
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-autotools
+            mingw-w64-x86_64-tcl
+            git
+            zip
+            wget
 
-      - name: Configure & Build
+      - name: Build (library + MultiCraft)
         run: |
-          cmake -B build -G Ninja \
-            -DBUILD_CLIENT=TRUE \
-            -DBUILD_SERVER=FALSE \
-            -DENABLE_LUAJIT=TRUE \
-            -DENABLE_GETTEXT=FALSE \
-            -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j 4
+          cd ./Windows
+          ./Start.sh
+          cmake --build . -j4
+          cd ..
+          strip -s ./bin/multicraft.exe
 
-      - name: Bundle DLLs & Files
+      - name: Package
         run: |
-          mkdir -p release_pkg
-          cp -r bin/* release_pkg/ 2>/dev/null || true
-          cp -r builtin client games textures fonts locale release_pkg/ 2>/dev/null || true
-          ldd release_pkg/multicraft.exe | grep '/ucrt64/bin/' | awk '{print $3}' | xargs -I '{}' cp -v '{}' release_pkg/
+          mkdir MultiCraft
+          cp -r ./bin MultiCraft/
+          for d in builtin client clientmods fonts games locale mods textures; do
+            [ -d "./$d" ] && cp -r "./$d" MultiCraft/ || true
+          done
+          cp multicraft.conf.example MultiCraft/ 2>/dev/null || true
 
-      - name: Upload EXE Artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MultiCraft-Windows-EXE
-          path: release_pkg/
+          name: MultiCraft-Windows
+          path: MultiCraft/
