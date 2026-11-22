@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - name: Checkout MultiCraft
         uses: actions/checkout@v4
@@ -18,17 +21,44 @@ jobs:
           repository: minetest/irrlicht
           path: lib/irrlichtmt
 
-      - name: Install Dependencies (vcpkg)
-        run: |
-          vcpkg install openal-soft libvorbis libogg curl freetype luajit gmp jsoncpp zstd sqlite3 zlib bzip2 libjpeg-turbo libpng --triplet x64-windows
+      - name: Setup MSYS2 & Dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-openal
+            mingw-w64-x86_64-libvorbis
+            mingw-w64-x86_64-libogg
+            mingw-w64-x86_64-curl
+            mingw-w64-x86_64-freetype
+            mingw-w64-x86_64-luajit
+            mingw-w64-x86_64-gmp
+            mingw-w64-x86_64-jsoncpp
+            mingw-w64-x86_64-zstd
+            mingw-w64-x86_64-sqlite3
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-libjpeg-turbo
+            mingw-w64-x86_64-libpng
 
       - name: Configure & Build
         run: |
-          cmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DBUILD_CLIENT=TRUE -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release -j 4
+          cmake -B build -G Ninja -DBUILD_CLIENT=TRUE -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j 4
+
+      - name: Bundle DLLs & Files
+        run: |
+          mkdir -p release_pkg
+          cp -r bin/* release_pkg/
+          cp -r builtin client games textures fonts locale release_pkg/ 2>/dev/null || true
+          ldd release_pkg/multicraft.exe | grep '/mingw64/bin/' | awk '{print $3}' | xargs -I '{}' cp -v '{}' release_pkg/
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MultiCraft-Windows-EXE
-          path: bin/Release/
+          path: release_pkg/
