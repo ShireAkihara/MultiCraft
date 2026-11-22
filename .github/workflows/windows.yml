@@ -15,7 +15,7 @@ jobs:
       - name: Checkout IrrlichtMt
         uses: actions/checkout@v4
         with:
-          repository: MultiCraft/irrlicht
+          repository: minetest/irrlicht
           path: lib/irrlichtmt
 
       - name: Install Dependencies (vcpkg)
