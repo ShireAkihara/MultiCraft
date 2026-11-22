@@ -1,0 +1,31 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout MultiCraft
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Checkout IrrlichtMt
+        run: git clone --depth 1 https://github.com lib/irrlichtmt
+
+      - name: Install Dependencies (vcpkg)
+        run: |
+          vcpkg install openal-soft libvorbis libogg curl freetype luajit gmp jsoncpp zstd sqlite3 zlib bzip2 libjpeg-turbo libpng --triplet x64-windows
+
+      - name: Configure & Build
+        run: |
+          cmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DBUILD_CLIENT=TRUE -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release -j 4
+
+      - name: Upload EXE Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MultiCraft-Windows-EXE
+          path: bin/Release/
